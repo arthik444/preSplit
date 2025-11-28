@@ -7,6 +7,7 @@ import {
     query,
     orderBy,
     Timestamp,
+    updateDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { ReceiptData, Person } from '../types';
@@ -28,15 +29,47 @@ export const saveReceipt = async (
     people: Person[]
 ): Promise<string> => {
     try {
+        const receiptToSave = {
+            ...receipt,
+            title: receipt.title || `Receipt ${new Date().toLocaleDateString()}`,
+        };
+
         const receiptsRef = collection(db, 'users', userId, 'receipts');
         const docRef = await addDoc(receiptsRef, {
-            receipt,
+            receipt: receiptToSave,
             people,
             createdAt: Timestamp.now(),
         });
         return docRef.id;
     } catch (error) {
         console.error('Error saving receipt:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update an existing receipt in Firestore
+ */
+export const updateReceipt = async (
+    userId: string,
+    receiptId: string,
+    receipt: ReceiptData,
+    people: Person[]
+): Promise<void> => {
+    try {
+        const receiptRef = doc(db, 'users', userId, 'receipts', receiptId);
+        const receiptToSave = {
+            ...receipt,
+            title: receipt.title || `Receipt ${new Date().toLocaleDateString()}`,
+        };
+
+        await updateDoc(receiptRef, {
+            receipt: receiptToSave,
+            people,
+            // Don't update createdAt
+        });
+    } catch (error) {
+        console.error('Error updating receipt:', error);
         throw error;
     }
 };

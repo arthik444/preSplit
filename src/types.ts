@@ -20,6 +20,7 @@ export interface ReceiptData {
     tip: number;
     miscellaneous?: number;
     total: number;
+    title?: string;
 }
 
 export type AppPhase = 'capture' | 'assignment' | 'settlement';

@@ -6,14 +6,18 @@ import { X, Trash2, Receipt, ArrowRight, Calendar } from 'lucide-react';
 
 interface HistoryModalProps {
     onClose: () => void;
+    onReceiptSelect?: () => void;
 }
 
-export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
+export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onReceiptSelect }) => {
     const { receiptHistory, loadReceipt, deleteReceiptFromHistory } = useAppStore();
 
     const handleLoadReceipt = (receipt: typeof receiptHistory[0]) => {
         loadReceipt(receipt);
         onClose();
+        if (onReceiptSelect) {
+            onReceiptSelect();
+        }
     };
 
     const handleDeleteReceipt = async (receiptId: string, e: React.MouseEvent) => {
@@ -122,13 +126,16 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose }) => {
 
                                     <div className="flex items-end justify-between">
                                         <div>
-                                            <div className="flex items-baseline gap-1">
+                                            <div className="flex items-baseline gap-2 mb-1">
                                                 <span className="text-3xl font-black text-gray-900 tracking-tight">
                                                     ${savedReceipt.receipt.total.toFixed(2)}
                                                 </span>
                                             </div>
+                                            <div className="text-sm font-semibold text-gray-700 mb-2 truncate max-w-[180px]">
+                                                {savedReceipt.receipt.title || 'Receipt'}
+                                            </div>
 
-                                            <div className="flex items-center gap-3 mt-2">
+                                            <div className="flex items-center gap-3">
                                                 <div className="flex items-center gap-1.5">
                                                     <div className="flex -space-x-1.5">
                                                         {savedReceipt.people.slice(0, 3).map((person, i) => (

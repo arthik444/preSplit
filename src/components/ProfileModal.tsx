@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store';
-import { X, LogOut, History, User as UserIcon, ChevronRight, Mail } from 'lucide-react';
+import { X, LogOut, History, ChevronRight, Mail } from 'lucide-react';
 import { HistoryModal } from './HistoryModal';
 
 interface ProfileModalProps {
@@ -12,6 +12,8 @@ interface ProfileModalProps {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
     const { user, signOutUser } = useAppStore();
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+    const [imgError, setImgError] = useState(false);
 
     if (!user) return null;
 
@@ -57,15 +59,18 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
                         <div className="flex flex-col items-center pt-4 pb-6">
                             <div className="relative mb-4 group">
                                 <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-500 blur-xl opacity-20 rounded-full group-hover:opacity-30 transition-opacity" />
-                                {user.photoURL ? (
+                                {user.photoURL && !imgError ? (
                                     <img
                                         src={user.photoURL}
                                         alt={user.displayName || 'User'}
+                                        onError={() => setImgError(true)}
                                         className="relative w-24 h-24 rounded-full border-4 border-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] object-cover"
                                     />
                                 ) : (
                                     <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center border-4 border-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
-                                        <UserIcon className="w-10 h-10 text-white" />
+                                        <span className="text-4xl font-bold text-white">
+                                            {(user.displayName || user.email || '?')[0].toUpperCase()}
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -128,7 +133,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
 
             <AnimatePresence>
                 {showHistoryModal && (
-                    <HistoryModal onClose={() => setShowHistoryModal(false)} />
+                    <HistoryModal
+                        onClose={() => setShowHistoryModal(false)}
+                        onReceiptSelect={onClose}
+                    />
                 )}
             </AnimatePresence>
         </>,

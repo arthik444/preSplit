@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { ReceiptData, Person, AppPhase, ReceiptItem, User, SavedReceipt } from './types';
 import { onAuthStateChange, signInWithGoogle, signOut } from './services/auth';
-import { saveReceipt as saveReceiptToFirestore, loadReceipts, deleteReceipt } from './services/firestore';
+import { saveReceipt as saveReceiptToFirestore, loadReceipts, deleteReceipt, updateReceipt } from './services/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ interface AppState {
     user: User | null;
     authLoading: boolean;
     receiptHistory: SavedReceipt[];
+    currentReceiptId: string | null;
 }
 
 interface AppContextType extends AppState {
@@ -24,6 +25,7 @@ interface AppContextType extends AppState {
     updateItemPrice: (itemId: string, price: number) => void;
     updateItem: (itemId: string, updates: Partial<ReceiptItem>) => void;
     updateReceiptTotals: (updates: { tax?: number; tip?: number; miscellaneous?: number }) => void;
+    updateReceiptTitle: (title: string) => void;
     assignAllToAll: () => void;
     clearAllAssignments: () => void;
     reset: () => void;
@@ -49,6 +51,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [receiptHistory, setReceiptHistory] = useState<SavedReceipt[]>([]);
+    const [currentReceiptId, setCurrentReceiptId] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Listen to auth state changes
     useEffect(() => {
@@ -171,10 +175,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
     };
 
+    const updateReceiptTitle = (title: string) => {
+        if (!receipt) return;
+        setReceipt({ ...receipt, title });
+    };
+
     const reset = () => {
         setPhase('capture');
         setReceipt(null);
         setPeople([]);
+        setCurrentReceiptId(null);
     };
 
     const assignAllToAll = () => {
@@ -218,25 +228,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     const saveCurrentReceipt = async () => {
-        if (!user || !receipt) {
-            toast.error('Please sign in to save receipts');
+        if (!user || !receipt || isSaving) {
+            if (!user) toast.error('Please sign in to save receipts');
             return;
         }
 
+        setIsSaving(true);
         try {
-            await saveReceiptToFirestore(user.uid, receipt, people);
-            toast.success('Receipt saved successfully!');
+            if (currentReceiptId) {
+                await updateReceipt(user.uid, currentReceiptId, receipt, people);
+                toast.success('Receipt updated!');
+            } else {
+                const newId = await saveReceiptToFirestore(user.uid, receipt, people);
+                setCurrentReceiptId(newId);
+                toast.success('Receipt saved successfully!');
+            }
             // Refresh history
             await loadReceiptsForUser(user.uid);
         } catch (error) {
             console.error('Error saving receipt:', error);
             toast.error('Failed to save receipt');
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const loadReceipt = (savedReceipt: SavedReceipt) => {
         setReceipt(savedReceipt.receipt);
         setPeople(savedReceipt.people);
+        setCurrentReceiptId(savedReceipt.id);
         setPhase('assignment');
         toast.success('Receipt loaded!');
     };
@@ -267,6 +287,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         user,
         authLoading,
         receiptHistory,
+        currentReceiptId,
         setPhase,
         setReceipt,
         addPerson,
@@ -275,6 +296,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateItemPrice,
         updateItem,
         updateReceiptTotals,
+        updateReceiptTitle,
         reset,
         assignAllToAll,
         clearAllAssignments,
