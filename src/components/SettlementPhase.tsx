@@ -67,7 +67,7 @@ export const SettlementPhase: React.FC = () => {
 
         const shareData = {
             title: `Split: ${receipt?.title || 'Bill'}`,
-            text: `Here is the split for ${receipt?.title || 'the bill'}:\n\n${text}\n\nTotal: $${receipt?.total.toFixed(2)}`,
+            text: `Here is the split for ${receipt?.title || 'the bill'}:\n\n${text}\n\nTotal: $${receipt?.total.toFixed(2)}\n\nVisit us at: https://www.presplit.pro`,
         };
 
         try {
@@ -87,7 +87,7 @@ export const SettlementPhase: React.FC = () => {
         const itemsList = data.items.map(item =>
             `• ${item.description}: $${item.sharePrice.toFixed(2)}`
         ).join('\n');
-        const text = `${String.fromCodePoint(0x1F464)} *${data.person.name}*\n${itemsList}\nTotal: $${data.total.toFixed(2)}`;
+        const text = `${String.fromCodePoint(0x1F464)} *${data.person.name}*\n${itemsList}\nTotal: $${data.total.toFixed(2)}\n\nVisit us at: https://www.presplit.pro`;
 
         navigator.clipboard.writeText(text);
     };
@@ -236,7 +236,7 @@ export const SettlementPhase: React.FC = () => {
 
                             const billDetails = `${String.fromCodePoint(0x1F4B0)} *Bill Details*\nSubtotal: $${receipt?.subtotal.toFixed(2)}\nTax: $${receipt?.tax?.toFixed(2) || '0.00'}\nTip: $${receipt?.tip?.toFixed(2) || '0.00'}\nMisc: $${receipt?.miscellaneous?.toFixed(2) || '0.00'}\nTotal: $${receipt?.total.toFixed(2)}`;
 
-                            const text = `${String.fromCodePoint(0x1F9FE)} *SmartSplit Receipt*\n\n${breakdown}\n\n${billDetails}`;
+                            const text = `${String.fromCodePoint(0x1F9FE)} *SmartSplit Receipt*\n\n${breakdown}\n\n${billDetails}\n\nVisit us at: https://www.presplit.pro`;
                             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
                         }}
                         className="bg-[#25D366] text-white py-3 rounded-xl font-semibold shadow-lg shadow-green-200 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"
