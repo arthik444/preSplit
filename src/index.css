@@ -31,15 +31,19 @@
     /* Prevent zoom on tap for mobile */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    /* Native app feel */
+    overscroll-behavior-y: none;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
   }
 
-  /* Prevent zoom on all interactive elements */
-  button,
-  a,
+  /* Re-enable text selection for inputs */
   input,
-  textarea,
-  select {
-    touch-action: manipulation;
+  textarea {
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
   }
 }
 

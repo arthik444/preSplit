@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../store';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useHaptic } from '../hooks/useHaptic';
 import { X, Users, Plus, Edit2, Trash2, Star, Check } from 'lucide-react';
 import type { SavedGroup } from '../types';
 
@@ -12,6 +13,7 @@ interface GroupsModalProps {
 
 export const GroupsModal: React.FC<GroupsModalProps> = ({ onClose }) => {
     const { savedGroups, people, userPreferences, createGroup, loadGroup, updateGroupDetails, deleteGroupById, setDefaultGroup, isGroupLoading } = useAppStore();
+    const haptic = useHaptic();
     const [isCreating, setIsCreating] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export const GroupsModal: React.FC<GroupsModalProps> = ({ onClose }) => {
     };
 
     const handleDeleteGroup = (groupId: string, groupName: string) => {
+        haptic();
         setConfirmingDeleteGroup({ id: groupId, name: groupName });
     };
 
@@ -57,6 +60,7 @@ export const GroupsModal: React.FC<GroupsModalProps> = ({ onClose }) => {
 
     const handleLoadGroup = (group: SavedGroup) => {
         if (people.length > 0) {
+            haptic();
             setConfirmingLoadGroup(group);
         } else {
             loadGroup(group);

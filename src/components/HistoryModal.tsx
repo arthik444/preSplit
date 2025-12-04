@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../store';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useHaptic } from '../hooks/useHaptic';
 import { X, Trash2, Receipt, ArrowRight, Calendar } from 'lucide-react';
 
 interface HistoryModalProps {
@@ -12,6 +13,7 @@ interface HistoryModalProps {
 
 export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onReceiptSelect }) => {
     const { receiptHistory, loadReceipt, deleteReceiptFromHistory } = useAppStore();
+    const haptic = useHaptic();
     const [confirmingReceiptId, setConfirmingReceiptId] = React.useState<string | null>(null);
 
     const handleLoadReceipt = (receipt: typeof receiptHistory[0]) => {
@@ -24,6 +26,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onReceiptSe
 
     const handleDeleteClick = (receiptId: string, e: React.MouseEvent) => {
         e.stopPropagation();
+        haptic();
         setConfirmingReceiptId(receiptId);
     };
 
