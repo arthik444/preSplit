@@ -4,6 +4,7 @@ import { CapturePhase } from './components/CapturePhase';
 import { AssignmentPhase } from './components/AssignmentPhase';
 import { SettlementPhase } from './components/SettlementPhase';
 import { RotateCcw } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { FinalLogo } from './components/FinalLogo';
 import { AuthButton } from './components/AuthButton';
@@ -38,9 +39,44 @@ const Main: React.FC = () => {
       </header>
 
       <main className="flex-1 overflow-hidden relative h-full">
-        {phase === 'capture' && <CapturePhase />}
-        {phase === 'assignment' && <AssignmentPhase />}
-        {phase === 'settlement' && <SettlementPhase />}
+        <AnimatePresence mode="wait">
+          {phase === 'capture' && (
+            <motion.div
+              key="capture"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              <CapturePhase />
+            </motion.div>
+          )}
+          {phase === 'assignment' && (
+            <motion.div
+              key="assignment"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              <AssignmentPhase />
+            </motion.div>
+          )}
+          {phase === 'settlement' && (
+            <motion.div
+              key="settlement"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              <SettlementPhase />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
