@@ -8,6 +8,7 @@ export const CapturePhase: React.FC = () => {
     const { setReceipt, setPhase, user, userPreferences, savedGroups, loadGroup, people } = useAppStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [processingStatus, setProcessingStatus] = useState<string>('');
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const galleryInputRef = useRef<HTMLInputElement>(null);
     const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
@@ -24,32 +25,71 @@ export const CapturePhase: React.FC = () => {
     }, [user, userPreferences, savedGroups, hasAutoLoaded, people.length, loadGroup]);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
         setIsProcessing(true);
         setError(null);
 
         try {
-            const data = await parseReceiptImage(file);
+            const fileArray = Array.from(files);
+            const allItems: any[] = [];
+            let combinedSubtotal = 0;
+            let combinedTax = 0;
+            let combinedTip = 0;
+            let combinedTotal = 0;
 
-            // Validate data
-            if (!data.items || data.items.length === 0) {
-                throw new Error("No items found in receipt. Please try again.");
+            // Process each image
+            for (let i = 0; i < fileArray.length; i++) {
+                const file = fileArray[i];
+                setProcessingStatus(`Processing image ${i + 1} of ${fileArray.length}...`);
+
+                try {
+                    const data = await parseReceiptImage(file);
+
+                    // Collect items
+                    if (data.items && data.items.length > 0) {
+                        allItems.push(...data.items);
+                    }
+
+                    // Sum up totals
+                    combinedSubtotal += data.subtotal || 0;
+                    combinedTax += data.tax || 0;
+                    combinedTip += data.tip || 0;
+                    combinedTotal += data.total || 0;
+                } catch (imageError: any) {
+                    console.warn(`Failed to process image ${i + 1}:`, imageError);
+                    // Continue processing other images
+                }
+            }
+
+            // Validate combined data
+            if (allItems.length === 0) {
+                throw new Error("No items found in any receipt. Please try again.");
             }
 
             // Check if we have at least some valid prices
-            const validItems = data.items.filter(item => typeof item.price === 'number' && !isNaN(item.price));
+            const validItems = allItems.filter(item => typeof item.price === 'number' && !isNaN(item.price));
             if (validItems.length === 0) {
                 throw new Error("Could not extract prices. Please try a clearer photo.");
             }
 
-            setReceipt(data);
+            // Create merged receipt
+            const mergedReceipt = {
+                items: allItems,
+                subtotal: parseFloat(combinedSubtotal.toFixed(2)),
+                tax: parseFloat(combinedTax.toFixed(2)),
+                tip: parseFloat(combinedTip.toFixed(2)),
+                total: parseFloat(combinedTotal.toFixed(2))
+            };
+
+            setReceipt(mergedReceipt);
             setPhase('assignment');
         } catch (err: any) {
             setError(err.message || "Failed to process receipt");
         } finally {
             setIsProcessing(false);
+            setProcessingStatus('');
         }
     };
 
@@ -85,7 +125,9 @@ export const CapturePhase: React.FC = () => {
                         {isProcessing ? (
                             <div className="flex flex-col items-center gap-3">
                                 <Loader2 className="w-10 h-10 text-gray-900 animate-spin" />
-                                <p className="text-sm font-medium text-gray-500 animate-pulse">Reading receipt...</p>
+                                <p className="text-sm font-medium text-gray-500 animate-pulse">
+                                    {processingStatus || 'Reading receipt...'}
+                                </p>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-4 transition-transform duration-300 group-hover:scale-105">
@@ -130,6 +172,7 @@ export const CapturePhase: React.FC = () => {
                     accept="image/*"
                     className="hidden"
                     capture="environment"
+                    multiple
                 />
                 <input
                     type="file"
@@ -137,6 +180,7 @@ export const CapturePhase: React.FC = () => {
                     onChange={handleFileChange}
                     accept="image/*"
                     className="hidden"
+                    multiple
                 />
             </div>
 
