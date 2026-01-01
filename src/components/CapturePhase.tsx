@@ -74,13 +74,14 @@ export const CapturePhase: React.FC = () => {
                 throw new Error("Could not extract prices. Please try a clearer photo.");
             }
 
-            // Create merged receipt
+            // Create merged receipt with recalculated subtotal
+            const subtotal = allItems.reduce((sum, item) => sum + (item.price || 0), 0);
             const mergedReceipt = {
                 items: allItems,
-                subtotal: parseFloat(combinedSubtotal.toFixed(2)),
+                subtotal: parseFloat(subtotal.toFixed(2)),
                 tax: parseFloat(combinedTax.toFixed(2)),
                 tip: parseFloat(combinedTip.toFixed(2)),
-                total: parseFloat(combinedTotal.toFixed(2))
+                total: parseFloat((subtotal + combinedTax + combinedTip).toFixed(2))
             };
 
             setReceipt(mergedReceipt);
