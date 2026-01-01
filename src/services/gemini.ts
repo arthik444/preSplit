@@ -95,11 +95,11 @@ export async function parseReceiptImage(imageFile: File): Promise<ReceiptData> {
                 .filter((item: any) => {
                     // Item must have a description and a valid price
                     return item &&
-                           typeof item.description === 'string' &&
-                           item.description.trim() !== '' &&
-                           typeof item.price === 'number' &&
-                           !isNaN(item.price) &&
-                           item.price >= 0;
+                        typeof item.description === 'string' &&
+                        item.description.trim() !== '' &&
+                        typeof item.price === 'number' &&
+                        !isNaN(item.price) &&
+                        item.price >= 0;
                 })
                 .map((item: any) => ({
                     description: item.description.trim(),
@@ -117,14 +117,24 @@ export async function parseReceiptImage(imageFile: File): Promise<ReceiptData> {
                 tip: typeof data.tip === 'number' ? parseFloat(data.tip.toFixed(2)) : 0,
                 total: typeof data.total === 'number' ? parseFloat(data.total.toFixed(2)) : 0
             };
-        } catch (parseError) {
+        } catch (parseError: any) {
+            // Keep specific error messages (like guardrail) instead of overwriting them
+            if (parseError.message?.includes("doesn't appear to be a receipt")) {
+                throw parseError;
+            }
             console.error("JSON Parse Error:", parseError);
             console.error("Failed JSON string:", jsonString);
             throw new Error("Could not read the receipt clearly. Please try again with better lighting.");
         }
     } catch (error: any) {
-        console.error("Error parsing receipt:", error);
-        // If it's already a user-friendly message, keep it
+        // Suppress console.error for expected guardrail triggers or user-facing messages
+        if (!error.message?.includes("doesn't appear to be a receipt") &&
+            !error.message?.includes("Could not read") &&
+            !error.message?.includes("Missing Gemini API Key")) {
+            console.error("Unexpected error parsing receipt:", error);
+        }
+
+        // Re-throw the user-friendly message
         if (error.message?.includes("doesn't appear to be a receipt") ||
             error.message?.includes("Could not read") ||
             error.message?.includes("Missing Gemini API Key")) {
