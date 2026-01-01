@@ -222,7 +222,7 @@ export const AssignmentPhase: React.FC = () => {
                             setPhase('settlement');
                         }
                     }}
-                    className={`w-full py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98] ${people.length > 0 && assignedItems === totalItems
+                    className={`w-full py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98] ${people.length > 0 && assignedItems === totalItems && totalItems > 0
                         ? 'bg-gradient-to-br from-gray-800 to-gray-900 text-white shadow-gray-900/30 hover:shadow-gray-900/40 hover:shadow-xl'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         }`}
@@ -230,6 +230,8 @@ export const AssignmentPhase: React.FC = () => {
                     {assignedItems < totalItems ? (
                         people.length === 0 ? (
                             <span>Add People to Start</span>
+                        ) : totalItems === 0 ? (
+                            <span>Add an Item Below</span>
                         ) : (
                             <div className="flex items-center justify-between w-full px-4">
                                 <span className="text-gray-600 font-medium">

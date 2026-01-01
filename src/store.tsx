@@ -40,6 +40,8 @@ interface AppContextType extends AppState {
     toggleAssignment: (itemId: string, personId: string) => void;
     updateItemPrice: (itemId: string, price: number) => void;
     updateItem: (itemId: string, updates: Partial<ReceiptItem>) => void;
+    addItem: (item?: Partial<ReceiptItem>) => void;
+    removeItem: (itemId: string) => void;
     updateReceiptTotals: (updates: { tax?: number; tip?: number; miscellaneous?: number }) => void;
     updateReceiptTitle: (title: string) => void;
     assignAllToAll: () => void;
@@ -276,12 +278,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const updateItemPrice = (itemId: string, price: number) => {
         if (!receipt) return;
-        setReceipt({
-            ...receipt,
-            items: receipt.items.map(item =>
-                item.id === itemId ? { ...item, price } : item
-            )
-        });
+        const updatedItems = receipt.items.map(item =>
+            item.id === itemId ? { ...item, price } : item
+        );
+        recalculateAndSetReceipt(updatedItems, receipt.tax, receipt.tip, receipt.miscellaneous);
     };
 
     const updateItem = (itemId: string, updates: Partial<ReceiptItem>) => {
@@ -291,34 +291,65 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             item.id === itemId ? { ...item, ...updates } : item
         );
 
-        const newSubtotal = updatedItems.reduce((sum, item) => sum + item.price, 0);
-        const newTotal = newSubtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.miscellaneous || 0);
+        recalculateAndSetReceipt(updatedItems, receipt.tax, receipt.tip, receipt.miscellaneous);
+    };
+
+    const addItem = (itemUpdates?: Partial<ReceiptItem>) => {
+        if (!receipt) return;
+
+        const newItem: ReceiptItem = {
+            id: crypto.randomUUID(),
+            description: 'New Item',
+            price: 0,
+            assignedTo: [],
+            ...itemUpdates
+        };
+
+        const updatedItems = [...receipt.items, newItem];
+        recalculateAndSetReceipt(updatedItems, receipt.tax, receipt.tip, receipt.miscellaneous);
+    };
+
+    const removeItem = (itemId: string) => {
+        if (!receipt) return;
+
+        const updatedItems = receipt.items.filter(i => i.id !== itemId);
+        recalculateAndSetReceipt(updatedItems, receipt.tax, receipt.tip, receipt.miscellaneous);
+    };
+
+    const recalculateAndSetReceipt = (
+        items: ReceiptItem[],
+        tax?: number,
+        tip?: number,
+        misc?: number
+    ) => {
+        if (!receipt) return;
+
+        const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+        const finalTax = tax ?? receipt.tax ?? 0;
+        const finalTip = tip ?? receipt.tip ?? 0;
+        const finalMisc = misc ?? receipt.miscellaneous ?? 0;
+        const total = subtotal + finalTax + finalTip + finalMisc;
 
         setReceipt({
             ...receipt,
-            items: updatedItems,
-            subtotal: newSubtotal,
-            total: newTotal
+            items,
+            subtotal: parseFloat(subtotal.toFixed(2)),
+            tax: parseFloat(finalTax.toFixed(2)),
+            tip: parseFloat(finalTip.toFixed(2)),
+            miscellaneous: parseFloat(finalMisc.toFixed(2)),
+            total: parseFloat(total.toFixed(2))
         });
     };
 
     const updateReceiptTotals = (updates: { tax?: number; tip?: number; miscellaneous?: number }) => {
         if (!receipt) return;
 
-        const newTax = updates.tax !== undefined ? updates.tax : receipt.tax;
-        const newTip = updates.tip !== undefined ? updates.tip : receipt.tip;
-        const newMisc = updates.miscellaneous !== undefined ? updates.miscellaneous : (receipt.miscellaneous || 0);
-
-        const newSubtotal = receipt.subtotal;
-        const newTotal = newSubtotal + newTax + newTip + newMisc;
-
-        setReceipt({
-            ...receipt,
-            tax: newTax,
-            tip: newTip,
-            miscellaneous: newMisc,
-            total: newTotal
-        });
+        recalculateAndSetReceipt(
+            receipt.items,
+            updates.tax,
+            updates.tip,
+            updates.miscellaneous
+        );
     };
 
     const updateReceiptTitle = (title: string) => {
@@ -611,6 +642,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleAssignment,
         updateItemPrice,
         updateItem,
+        addItem,
+        removeItem,
         updateReceiptTotals,
         updateReceiptTitle,
         reset,

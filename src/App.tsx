@@ -3,14 +3,38 @@ import { AppProvider, useAppStore } from './store';
 import { CapturePhase } from './components/CapturePhase';
 import { AssignmentPhase } from './components/AssignmentPhase';
 import { SettlementPhase } from './components/SettlementPhase';
-import { RotateCcw } from 'lucide-react';
+import { LandingPhase } from './components/LandingPhase';
+import { RotateCcw, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { FinalLogo } from './components/FinalLogo';
 import { AuthButton } from './components/AuthButton';
 
 const Main: React.FC = () => {
-  const { phase, reset } = useAppStore();
+  const { phase, reset, user, authLoading } = useAppStore();
+
+  if (authLoading) {
+    return (
+      <div className="h-[100dvh] bg-white flex flex-col items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <FinalLogo size={80} className="animate-pulse" />
+          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="h-[100dvh] bg-gray-50 flex flex-col max-w-md md:max-w-2xl mx-auto shadow-xl bg-white overflow-hidden">
+        <LandingPhase />
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] bg-gray-50 flex flex-col max-w-md md:max-w-2xl mx-auto shadow-xl bg-white overflow-hidden">
