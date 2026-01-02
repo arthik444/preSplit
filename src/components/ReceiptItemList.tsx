@@ -9,7 +9,7 @@ interface ReceiptItemCardProps {
 }
 
 const ReceiptItemCard: React.FC<ReceiptItemCardProps> = ({ item, isHighlighted }) => {
-    const { updateItem, people, toggleAssignment, receipt, setReceipt } = useAppStore();
+    const { updateItem, people, toggleAssignment, removeItem } = useAppStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
         description: item.description,
@@ -41,18 +41,7 @@ const ReceiptItemCard: React.FC<ReceiptItemCardProps> = ({ item, isHighlighted }
 
     const handleRemove = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!receipt) return;
-
-        const updatedItems = receipt.items.filter(i => i.id !== item.id);
-        const newSubtotal = updatedItems.reduce((sum, item) => sum + item.price, 0);
-        const newTotal = newSubtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.miscellaneous || 0);
-
-        setReceipt({
-            ...receipt,
-            items: updatedItems,
-            subtotal: newSubtotal,
-            total: newTotal
-        });
+        removeItem(item.id);
     };
 
     // Calculate dynamic values for display during edit
@@ -199,28 +188,12 @@ interface ReceiptItemListProps {
 }
 
 export const ReceiptItemList: React.FC<ReceiptItemListProps> = ({ highlightedItemId }) => {
-    const { receipt, setReceipt } = useAppStore();
+    const { receipt, addItem } = useAppStore();
 
     if (!receipt) return null;
 
     const handleAddItem = () => {
-        const newItem: ReceiptItem = {
-            id: crypto.randomUUID(),
-            description: 'New Item',
-            price: 0,
-            assignedTo: []
-        };
-
-        const updatedItems = [...receipt.items, newItem];
-        const newSubtotal = updatedItems.reduce((sum, item) => sum + item.price, 0);
-        const newTotal = newSubtotal + (receipt.tax || 0) + (receipt.tip || 0) + (receipt.miscellaneous || 0);
-
-        setReceipt({
-            ...receipt,
-            items: updatedItems,
-            subtotal: newSubtotal,
-            total: newTotal
-        });
+        addItem();
     };
 
     return (

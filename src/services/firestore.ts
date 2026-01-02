@@ -13,6 +13,29 @@ import {
 import { db } from '../config/firebase';
 import type { ReceiptData, Person, SavedGroup, UserPreferences } from '../types';
 
+const sanitizeData = (data: any): any => {
+    if (data === undefined) return null;
+    if (data === null) return null;
+
+    // Handle Firestore Timestamps - don't recurse into them
+    if (data && typeof data === 'object' && typeof data.toDate === 'function') {
+        return data;
+    }
+
+    if (Array.isArray(data)) return data.map(sanitizeData);
+    if (typeof data === 'object') {
+        const sanitized: any = {};
+        Object.keys(data).forEach(key => {
+            const val = sanitizeData(data[key]);
+            if (val !== undefined) {
+                sanitized[key] = val;
+            }
+        });
+        return sanitized;
+    }
+    return data;
+};
+
 export interface SavedReceipt {
     id: string;
     receipt: ReceiptData;
@@ -36,11 +59,11 @@ export const saveReceipt = async (
         };
 
         const receiptsRef = collection(db, 'users', userId, 'receipts');
-        const docRef = await addDoc(receiptsRef, {
+        const docRef = await addDoc(receiptsRef, sanitizeData({
             receipt: receiptToSave,
             people,
             createdAt: Timestamp.now(),
-        });
+        }));
         return docRef.id;
     } catch (error) {
         console.error('Error saving receipt:', error);
@@ -64,11 +87,11 @@ export const updateReceipt = async (
             title: receipt.title || `Receipt ${new Date().toLocaleDateString()}`,
         };
 
-        await updateDoc(receiptRef, {
+        await updateDoc(receiptRef, sanitizeData({
             receipt: receiptToSave,
             people,
             // Don't update createdAt
-        });
+        }));
     } catch (error) {
         console.error('Error updating receipt:', error);
         throw error;
@@ -86,11 +109,23 @@ export const loadReceipts = async (userId: string): Promise<SavedReceipt[]> => {
 
         return querySnapshot.docs.map((doc) => {
             const data = doc.data();
+
+            // Handle potentially corrupted or old data format
+            let createdAtDate: Date;
+            if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                createdAtDate = data.createdAt.toDate();
+            } else if (data.createdAt && data.createdAt.seconds) {
+                // If it was accidentally saved as a plain object
+                createdAtDate = new Date(data.createdAt.seconds * 1000);
+            } else {
+                createdAtDate = new Date();
+            }
+
             return {
                 id: doc.id,
                 receipt: data.receipt as ReceiptData,
                 people: data.people as Person[],
-                createdAt: data.createdAt.toDate(),
+                createdAt: createdAtDate,
                 userId,
             };
         });
@@ -203,10 +238,11 @@ export const saveUserPreferences = async (
 ): Promise<void> => {
     try {
         const prefsRef = doc(db, 'users', userId, 'preferences', 'settings');
-        await updateDoc(prefsRef, preferences as any).catch(async () => {
+        const sanitizedPrefs = sanitizeData(preferences);
+        await updateDoc(prefsRef, sanitizedPrefs).catch(async () => {
             // If document doesn't exist, create it
             const { setDoc } = await import('firebase/firestore');
-            await setDoc(prefsRef, preferences);
+            await setDoc(prefsRef, sanitizedPrefs);
         });
     } catch (error) {
         console.error('Error saving preferences:', error);

@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Camera, Image as ImageIcon, Loader2, Plus } from 'lucide-react';
 import { useAppStore } from '../store';
 import { parseReceiptImage } from '../services/gemini';
 import { FinalLogo } from './FinalLogo';
+import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const CapturePhase: React.FC = () => {
     const { setReceipt, setPhase, user, userPreferences, savedGroups, loadGroup, people } = useAppStore();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [processingStatus, setProcessingStatus] = useState<string>('');
+    const [guardrailError, setGuardrailError] = useState<string | null>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const galleryInputRef = useRef<HTMLInputElement>(null);
     const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
@@ -29,7 +31,6 @@ export const CapturePhase: React.FC = () => {
         if (!files || files.length === 0) return;
 
         setIsProcessing(true);
-        setError(null);
 
         try {
             const fileArray = Array.from(files);
@@ -58,8 +59,12 @@ export const CapturePhase: React.FC = () => {
                     combinedTip += data.tip || 0;
                     combinedTotal += data.total || 0;
                 } catch (imageError: any) {
-                    console.warn(`Failed to process image ${i + 1}:`, imageError);
-                    // Continue processing other images
+                    const isGuardrail = imageError.message?.includes("doesn't appear to be a receipt");
+                    if (!isGuardrail) {
+                        console.error(`Failed to process image ${i + 1}:`, imageError);
+                    }
+                    // Re-throw so we stop the entire process and show the alert
+                    throw imageError;
                 }
             }
 
@@ -74,23 +79,58 @@ export const CapturePhase: React.FC = () => {
                 throw new Error("Could not extract prices. Please try a clearer photo.");
             }
 
-            // Create merged receipt
+            // Create merged receipt with recalculated subtotal
+            const subtotal = allItems.reduce((sum, item) => sum + (item.price || 0), 0);
             const mergedReceipt = {
                 items: allItems,
-                subtotal: parseFloat(combinedSubtotal.toFixed(2)),
+                subtotal: parseFloat(subtotal.toFixed(2)),
                 tax: parseFloat(combinedTax.toFixed(2)),
                 tip: parseFloat(combinedTip.toFixed(2)),
-                total: parseFloat(combinedTotal.toFixed(2))
+                total: parseFloat((subtotal + combinedTax + combinedTip).toFixed(2))
             };
 
             setReceipt(mergedReceipt);
             setPhase('assignment');
         } catch (err: any) {
-            setError(err.message || "Failed to process receipt");
+            const errorMessage = err.message || "Failed to process receipt";
+
+            // Suppress console.error for guardrail triggers
+            if (!errorMessage.includes("doesn't appear to be a receipt")) {
+                console.error("Processing error:", err);
+                toast.error(errorMessage, {
+                    duration: 4000,
+                    icon: null,
+                    style: {
+                        borderRadius: '16px',
+                        background: '#18181b',
+                        color: '#fff',
+                        padding: '12px 20px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                    },
+                });
+            } else {
+                setGuardrailError(errorMessage);
+            }
         } finally {
             setIsProcessing(false);
             setProcessingStatus('');
         }
+    };
+
+    const handleCreateManualBill = () => {
+        const emptyReceipt = {
+            items: [],
+            subtotal: 0,
+            tax: 0,
+            tip: 0,
+            total: 0,
+            title: `Bill ${new Date().toLocaleDateString()}`
+        };
+        setReceipt(emptyReceipt);
+        setPhase('assignment');
     };
 
     return (
@@ -155,6 +195,15 @@ export const CapturePhase: React.FC = () => {
                     </div>
 
                     <button
+                        onClick={handleCreateManualBill}
+                        disabled={isProcessing}
+                        className="w-full py-3 bg-white text-gray-900 border border-gray-200 rounded-xl font-semibold text-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Bill Manually
+                    </button>
+
+                    <button
                         onClick={() => galleryInputRef.current?.click()}
                         disabled={isProcessing}
                         className="w-full py-3 bg-black text-white rounded-xl font-semibold text-sm hover:bg-gray-900 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
@@ -183,15 +232,45 @@ export const CapturePhase: React.FC = () => {
                     multiple
                 />
             </div>
+            {/* Guardrail Error Modal */}
+            <AnimatePresence>
+                {guardrailError && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setGuardrailError(null)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden"
+                        >
+                            <div className="p-8 text-center">
+                                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
+                                    <ImageIcon className="w-8 h-8" />
+                                </div>
+                                <h3 className="text-xl font-black text-gray-900 mb-3">
+                                    Invalid Scan
+                                </h3>
+                                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                                    {guardrailError}
+                                </p>
+                            </div>
 
-            {/* Error Toast */}
-            {error && (
-                <div className="absolute bottom-6 left-4 right-4 mx-auto max-w-md">
-                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center shadow-sm border border-red-100 animate-in slide-in-from-bottom-2">
-                        {error}
+                            <button
+                                onClick={() => setGuardrailError(null)}
+                                className="w-full py-4 text-base font-bold text-blue-600 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 transition-colors border-t border-gray-100"
+                            >
+                                Got it
+                            </button>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 };

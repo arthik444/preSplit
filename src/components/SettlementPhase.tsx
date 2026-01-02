@@ -66,8 +66,8 @@ export const SettlementPhase: React.FC = () => {
         ).join('\n');
 
         const shareData = {
-            title: `Split: ${receipt?.title || 'Bill'}`,
-            text: `Here is the split for ${receipt?.title || 'the bill'}:\n\n${text}\n\nTotal: $${receipt?.total.toFixed(2)}\n\nVisit us at: https://www.presplit.pro`,
+            title: `BillBeam: ${receipt?.title || 'Receipt'}`,
+            text: `BillBeam Split: ${receipt?.title || 'Receipt'}\n\n${text}\n\nTotal: $${receipt?.total.toFixed(2)}\n\nSettled via BillBeam: https://presplit.pro`,
         };
 
         try {
@@ -85,9 +85,9 @@ export const SettlementPhase: React.FC = () => {
     const copyIndividual = (e: React.MouseEvent, data: typeof settlementData[0]) => {
         e.stopPropagation();
         const itemsList = data.items.map(item =>
-            `• ${item.description}: $${item.sharePrice.toFixed(2)}`
+            `- ${item.description}: $${item.sharePrice.toFixed(2)}`
         ).join('\n');
-        const text = `${String.fromCodePoint(0x1F464)} *${data.person.name}*\n${itemsList}\nTotal: $${data.total.toFixed(2)}\n\nVisit us at: https://www.presplit.pro`;
+        const text = `BillBeam Split: ${data.person.name}\n\n${itemsList}\n\nTotal: $${data.total.toFixed(2)}\n\nSettled via BillBeam: https://presplit.pro`;
 
         navigator.clipboard.writeText(text);
     };
@@ -229,14 +229,14 @@ export const SettlementPhase: React.FC = () => {
 
                             const breakdown = settlementData.map(d => {
                                 const itemsList = d.items.map(item =>
-                                    `• ${item.description}: $${item.sharePrice.toFixed(2)}`
+                                    `- ${item.description}: $${item.sharePrice.toFixed(2)}`
                                 ).join('\n');
-                                return `${String.fromCodePoint(0x1F464)} *${d.person.name}*\n${itemsList}\nTotal: $${d.total.toFixed(2)}`;
+                                return `*${d.person.name}*\n${itemsList}\nTotal: $${d.total.toFixed(2)}`;
                             }).join('\n\n');
 
-                            const billDetails = `${String.fromCodePoint(0x1F4B0)} *Bill Details*\nSubtotal: $${receipt?.subtotal.toFixed(2)}\nTax: $${receipt?.tax?.toFixed(2) || '0.00'}\nTip: $${receipt?.tip?.toFixed(2) || '0.00'}\nMisc: $${receipt?.miscellaneous?.toFixed(2) || '0.00'}\nTotal: $${receipt?.total.toFixed(2)}`;
+                            const billDetails = `*Bill Details*\nSubtotal: $${receipt?.subtotal.toFixed(2)}\nTax: $${receipt?.tax?.toFixed(2) || '0.00'}\nTip: $${receipt?.tip?.toFixed(2) || '0.00'}\nMisc: $${receipt?.miscellaneous?.toFixed(2) || '0.00'}\nTotal: $${receipt?.total.toFixed(2)}`;
 
-                            const text = `${String.fromCodePoint(0x1F9FE)} *SmartSplit Receipt*\n\n${breakdown}\n\n${billDetails}\n\nVisit us at: https://www.presplit.pro`;
+                            const text = `BillBeam Split: ${receipt?.title || 'Receipt'}\n\n${breakdown}\n\n${billDetails}\n\nSettled via BillBeam: https://presplit.pro`;
                             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
                         }}
                         className="bg-[#25D366] text-white py-3 rounded-xl font-semibold shadow-lg shadow-green-200 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"

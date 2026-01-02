@@ -18,6 +18,7 @@
 @layer base {
   html {
     font-size: 16px;
+    height: 100%;
   }
 
   @media (max-width: 360px) {
@@ -55,5 +56,64 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  .glass-navbar {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  }
+
+  /* Handle short screens like iPhone SE */
+  @media (max-height: 700px) {
+    .short-pt {
+      padding-top: 1.5rem !important;
+    }
+
+    .short-gap {
+      gap: 1rem !important;
+    }
+
+    .short-mt {
+      margin-top: 1rem !important;
+    }
+
+    .short-mb-4 {
+      margin-bottom: 1rem !important;
+    }
+
+    .short-size {
+      width: 64px !important;
+      height: 64px !important;
+    }
+
+    .short-size-64 {
+      width: 64px !important;
+      height: 64px !important;
+    }
+
+    .short-py {
+      padding-top: 1rem !important;
+      padding-bottom: 1rem !important;
+    }
+
+    .short-space> :not([hidden])~ :not([hidden]) {
+      margin-top: 1.25rem !important;
+    }
+
+    .short-h {
+      height: 3rem !important;
+    }
+
+    .short-text-h1 {
+      font-size: 1.75rem !important;
+      line-height: 2rem !important;
+    }
+
+    .short-text-logo {
+      font-size: 2rem !important;
+      line-height: 2.25rem !important;
+    }
   }
 }
