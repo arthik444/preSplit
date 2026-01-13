@@ -22,7 +22,7 @@
                 "headers": [
                     {
                         "key": "Access-Control-Allow-Origin",
-                        "value": "https://www.presplit.pro"
+                        "value": "https://www.billbeam.pro"
                     }
                 ]
             }
