@@ -215,11 +215,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is open source and available under the MIT License. 
 
-## Author
+## Authors
 
 **arthik444**
 
 - GitHub: [@arthik444](https://github.com/arthik444)
+
+**gana36**
+
+- GitHub: [@gana36](https://github.com/gana36)
 
 ## Acknowledgments
 
